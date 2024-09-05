@@ -174,7 +174,7 @@ def main():
         for point in bezier_ctrl_points:
             cv.circle(debug_image, point, 10, (0,255,0), -1)
 
-        if len(bezier_ctrl_points) == 4:
+        if (bezier_ctrl_points) == 4:
             debug_image = draw_bezier_curve(debug_image, bezier_ctrl_points)
 
         cv.imshow('Hand Gesture Recognition', debug_image)
@@ -482,12 +482,14 @@ def draw_bounding_rect(use_brect, image, brect):
 bezier_ctrl_points = []
 open_hand = True
 
-# Compute binomial coefficients C for given value of n
 def binomial_coeffs(n):
-    coeffs = []
-    # implement your code here
+    coeffs = [1]  # C(n, 0) is always 1
+    for k in range(1, n+1):
+        # Calculate the next coefficient using the formula:
+        # C(n, k) = C(n, k-1) * (n-k+1) / k
+        next_coeff = coeffs[-1] * (n - k + 1) // k
+        coeffs.append(next_coeff)
     return coeffs
-
 
 def compute_bezier_point():
     point = [0,0]
@@ -495,23 +497,20 @@ def compute_bezier_point():
 
 
 def draw_bezier_curve(debug_image, ctrl_points):
-    def bezier_point(t, points):
-        """Recursive calculation of the Bezier point at time t."""
-        if len(points) == 1:
-            return points[0]
-        new_points = []
-        for i in range(len(points) - 1):
-            x = (1 - t) * points[i][0] + t * points[i + 1][0]
-            y = (1 - t) * points[i][1] + t * points[i + 1][1]
-            new_points.append((int(x), int(y)))
-        return bezier_point(t, new_points)
-
-    # Draw the Bézier curve using several points along the curve
-    num_points = 100  # Number of points to draw the curve
-    for i in range(num_points):
-        t = i / (num_points - 1)
-        point = bezier_point(t, ctrl_points)
-        cv.circle(debug_image, point, 1, (255, 0, 0), -1)
+    # Check if there are exactly 4 control points
+    if len(ctrl_points) != 4:
+        raise ValueError("Bézier curve requires exactly 4 control points")
+    
+    # Calculate Bézier curve points
+    bezier_points = []
+    for t in np.linspace(0, 1, num=100):  # 100 points along the curve
+        x = (1-t)**3 * ctrl_points[0][0] + 3 * (1-t)**2 * t * ctrl_points[1][0] + 3 * (1-t) * t**2 * ctrl_points[2][0] + t**3 * ctrl_points[3][0]
+        y = (1-t)**3 * ctrl_points[0][1] + 3 * (1-t)**2 * t * ctrl_points[1][1] + 3 * (1-t) * t**2 * ctrl_points[2][1] + t**3 * ctrl_points[3][1]
+        bezier_points.append((int(x), int(y)))
+    
+    # Draw the Bézier curve
+    for point in bezier_points:
+        cv.circle(debug_image, point, 2, (0, 255, 0), -1)  # Draw small circles along the curve
 
     return debug_image
 
